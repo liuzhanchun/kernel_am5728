@@ -1,0 +1,15 @@
+if VIDEO_V4L2
+
+menu "SPI helper chips"
+	visible if !MEDIA_SUBDRV_AUTOSELECT || COMPILE_TEST
+
+config VIDEO_GV7601
+	tristate "Gennum Serializers video GV7601"
+	depends on SPI && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+	---help---
+	  Enable the GV7601 driver which serializes video streams.
+
+endmenu
+
+endif
+

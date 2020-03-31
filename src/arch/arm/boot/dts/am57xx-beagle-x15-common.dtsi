@@ -1,0 +1,1141 @@
+/*
+ * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+
+#include "dra74x.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	model = "TI AM5728 BeagleBoard-X15";
+	compatible = "ti,am572x-beagle-x15", "ti,am5728", "ti,dra742", "ti,dra74", "ti,dra7";
+
+	aliases {
+		rtc0 = &mcp_rtc;
+		rtc1 = &tps659038_rtc;
+		rtc2 = &rtc;
+		display0 = &hdmi0;
+
+		sound0 = &hdmi;
+		sound1 = &sound0;
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x80000000 0x0 0x80000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		ipu2_cma_pool: ipu2_cma@95800000 {
+			compatible = "shared-dma-pool";
+			reg = <0x0 0x95800000 0x0 0x3800000>;
+			reusable;
+			status = "okay";
+		};
+
+		dsp1_cma_pool: dsp1_cma@99000000 {
+			compatible = "shared-dma-pool";
+			reg = <0x0 0x99000000 0x0 0x4000000>;
+			reusable;
+			status = "okay";
+		};
+
+		ipu1_cma_pool: ipu1_cma@9d000000 {
+			compatible = "shared-dma-pool";
+			reg = <0x0 0x9d000000 0x0 0x2000000>;
+			reusable;
+			status = "okay";
+		};
+
+		dsp2_cma_pool: dsp2_cma@9f000000 {
+			compatible = "shared-dma-pool";
+			reg = <0x0 0x9f000000 0x0 0x800000>;
+			reusable;
+			status = "okay";
+		};
+
+		cmem_block_mem_0: cmem_block_mem@a0000000 {
+                        reg = <0x0 0xa0000000 0x0 0x0c000000>;
+                        no-map;
+                        status = "okay";
+                };
+
+		cmem_block_mem_1_ocmc3: cmem_block_mem@40500000 {
+			reg = <0x0 0x40500000 0x0 0x100000>;
+			no-map;
+			status = "okay";
+		};
+	};
+
+	vdd_3v3: fixedregulator-vdd_3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vdd_3v3";
+		vin-supply = <&regen1>;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+	};
+
+	aic_dvdd: fixedregulator-aic_dvdd {
+		compatible = "regulator-fixed";
+		regulator-name = "aic_dvdd_fixed";
+		vin-supply = <&vdd_3v3>;
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+	};
+
+	vtt_fixed: fixedregulator-vtt {
+		/* TPS51200 */
+		compatible = "regulator-fixed";
+		regulator-name = "vtt_fixed";
+		vin-supply = <&smps3_reg>;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+		regulator-boot-on;
+		enable-active-high;
+		//gpio = <&gpio7 11 GPIO_ACTIVE_HIGH>;
+	};
+
+	cmem {
+                compatible = "ti,cmem";
+                #address-cells = <1>;
+                #size-cells = <0>;
+
+                #pool-size-cells = <2>;
+
+                status = "okay";
+
+                cmem_block_0: cmem_block@0 {
+                        reg = <0>;
+                        memory-region = <&cmem_block_mem_0>;
+                        cmem-buf-pools = <1 0x0 0x0c000000>;
+                };
+
+		cmem_block_1: cmem_block@1 {
+			reg = <1>;
+			memory-region = <&cmem_block_mem_1_ocmc3>;
+		};
+        };
+
+	leds {
+		pinctrl-names = "default";
+		pinctrl-0 = <&leds_pins_default>;
+		compatible = "gpio-leds";
+		led@0 {
+			label = "tl572x:green:heartbeat";
+			gpios = <&gpio7 7 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "heartbeat";
+			default-state = "off";
+		};
+
+		led@1 {
+			label = "tl572x:green:cpu0";
+			gpios = <&gpio7 9 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "cpu0";
+			default-state = "off";
+		};
+
+		led@2 {
+			label = "user-led0";
+			gpios = <&gpio3 19 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		led@3 {
+			label = "user-led1";
+			gpios = <&gpio3 20 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		led@4 {
+			label = "user-led2";
+			gpios = <&gpio3 21 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+	};
+
+	pwm_timer16: dmtimer-pwm@16 {
+		pinctrl-names = "default";
+		pinctrl-0 = <&fan_pins_default>;
+		compatible = "ti,omap-dmtimer-pwm";
+		ti,timers = <&timer16>;
+		#pwm-cells = <3>;
+		ti,prescaler = <7>;
+		ti,clock-source = <0x00>;
+	};
+
+	pwm_fan: pwm_fan {
+		compatible = "pwm-fan";
+		cooling-min-state = <0>;
+		cooling-max-state = <3>;
+		#cooling-cells = <2>;
+		pwms = <&pwm_timer16 0 10000 0>;
+		cooling-levels = <102 153 204 250>;
+	};
+
+	hdmi0: connector {
+		compatible = "hdmi-connector";
+		label = "hdmi";
+
+		type = "a";
+
+		port {
+			hdmi_connector_in: endpoint {
+				remote-endpoint = <&tpd12s015_out>;
+			};
+		};
+	};
+
+	tpd12s015: encoder {
+		compatible = "ti,tpd12s015";
+
+		gpios = <&gpio7 10 GPIO_ACTIVE_HIGH>,	/* gpio7_10, CT CP HPD */
+			<&gpio6 28 GPIO_ACTIVE_HIGH>,	/* gpio6_28, LS OE */
+			<&gpio7 12 GPIO_ACTIVE_HIGH>;	/* gpio7_12/sp1_cs2, HPD */
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				tpd12s015_in: endpoint {
+					remote-endpoint = <&hdmi_out>;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+
+				tpd12s015_out: endpoint {
+					remote-endpoint = <&hdmi_connector_in>;
+				};
+			};
+		};
+	};
+
+	tvp5158_audio: tvp5158_audio {
+		#sound-dai-cells = <0>;
+		compatible = "ti,tvp5158-audio";
+
+		assigned-clocks = <&clkoutmux2_clk_mux>;
+		assigned-clock-parents = <&sys_clk2_dclk_div>;
+
+		status = "okay";
+	};
+
+	sound0: sound@0 {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "BeagleBoard-X15";
+		simple-audio-card,widgets =
+			"Line", "Line In";
+		simple-audio-card,routing =
+			"Line In", "Line In";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,bitclock-master = <&sound0_master>;
+		simple-audio-card,frame-master = <&sound0_master>;
+		simple-audio-card,bitclock-inversion;
+
+		simple-audio-card,cpu {
+			sound-dai = <&mcasp2>;
+		};
+
+		sound0_master: simple-audio-card,codec {
+			sound-dai = <&tvp5158_audio>;
+			clocks = <&clkout2_clk>;
+		};
+	};
+};
+
+&dra7_pmx_core {
+	pinctrl-names = "default";
+	pinctrl-0 = <&gpio1_pins_default &gpio4_pins_default &i2c1_pins_default &i2c4_pins_default &gpmc_pins_default>;
+
+	leds_pins_default: leds_pins_default {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x37a4, (PIN_OUTPUT | MUX_MODE14)) /* spi1_sclk.gpio7_7 (som led1) A25 */
+			DRA7XX_CORE_IOPAD(0x37ac, (PIN_OUTPUT | MUX_MODE14)) /* spi1_d0.gpio7_9 (som led2) B25 */
+			DRA7XX_CORE_IOPAD(0x3530, (PIN_OUTPUT | MUX_MODE14)) /* vin1a_d15.gpio3_19 */
+			DRA7XX_CORE_IOPAD(0x3534, (PIN_OUTPUT | MUX_MODE14)) /* vin1a_d16.gpio3_20 */
+			DRA7XX_CORE_IOPAD(0x3538, (PIN_OUTPUT | MUX_MODE14)) /* vin1a_d17.gpio3_21 */
+		>;
+	};
+
+	i2c1_pins_default: i2c1_pins_default {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x3800, (PIN_INPUT_PULLUP | MUX_MODE0)) /* i2c1_sda.sda */
+			DRA7XX_CORE_IOPAD(0x3804, (PIN_INPUT_PULLUP | MUX_MODE0)) /* i2c1_scl.scl */
+		>;
+	};
+
+	i2c4_pins_default: i2c4_pins_default {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x3440, (PIN_INPUT_PULLUP | MUX_MODE7)) /* gpmc_a0.i2c4_scl */
+			DRA7XX_CORE_IOPAD(0x3444, (PIN_INPUT_PULLUP | MUX_MODE7)) /* gpmc_a1.i2c4_sda */
+		>;
+	};
+
+	uart1_pins_default: uart1_pins_default {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x37e0, (PIN_INPUT_PULLUP | MUX_MODE0)) /* uart1_rxd.uart1_rxd */
+			DRA7XX_CORE_IOPAD(0x37e4, (PIN_INPUT_PULLUP | MUX_MODE0)) /* uart1_txd.uart1_txd */
+		>;
+	};
+
+	uart10_pins_default: uart10_pins_default {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x3570, (PIN_INPUT_PULLUP | MUX_MODE8)) /* vin2a_d2.uart10_rxd */
+			DRA7XX_CORE_IOPAD(0x3574, (PIN_INPUT_PULLUP | MUX_MODE8)) /* vin2a_d3.uart10_txd */
+		>;
+	};
+
+	fan_pins_default: fan_pins_default {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x34e4, (PIN_OUTPUT_PULLUP | MUX_MODE7)) /* vin1a_de0.timer16 (AD9) */
+		>;
+	};
+
+	ads7846_pins: ads7846_pins {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x3548, (PIN_INPUT_PULLUP | MUX_MODE14)) /* vin1a_d21.gpio3_25 */
+		>;
+	};
+
+	qspi1_pins_default: qspi1_pins_default {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x3488, (PIN_INPUT_PULLUP | MUX_MODE1)) /* gpmc_a18.qspi1_sclk */
+			DRA7XX_CORE_IOPAD(0x3474, (PIN_INPUT_PULLUP | MUX_MODE1)) /* gpmc_a13.qspi1_rtclk */
+			DRA7XX_CORE_IOPAD(0x3480, (PIN_INPUT_PULLUP | MUX_MODE1)) /* gpmc_a16.qspi1_d0 */
+			DRA7XX_CORE_IOPAD(0x3484, (PIN_INPUT_PULLUP | MUX_MODE1)) /* gpmc_a17.qspi1_d1 */
+			DRA7XX_CORE_IOPAD(0x347c, (PIN_INPUT_PULLUP | MUX_MODE1)) /* gpmc_a15.qspi1_d2 */
+			DRA7XX_CORE_IOPAD(0x3478, (PIN_INPUT_PULLUP | MUX_MODE1)) /* gpmc_a14.qspi1_d3 */
+			DRA7XX_CORE_IOPAD(0x34b8, (PIN_INPUT_PULLUP | MUX_MODE1)) /* gpmc_cs2.qspi1_cs0 */
+		>;
+	};
+
+	spi3_pins: spi3_pins {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x3780, (INPUT_EN | MUX_MODE1))          /* mcasp1_axr8.spi3_sclk (B12) */
+			DRA7XX_CORE_IOPAD(0x3784, (INPUT_EN | MUX_MODE1))          /* mcasp1_axr9.spi3_d1 (A11) */
+			DRA7XX_CORE_IOPAD(0x3788, (INPUT_EN | MUX_MODE1))          /* mcasp1_axr10.spi3_d0 (B13) */
+			DRA7XX_CORE_IOPAD(0x378C, (PIN_OUTPUT_PULLUP | MUX_MODE1)) /* mcasp1_axr11.spi3_cs0 (A12) */
+		>;
+	};
+
+	spi2_pins: spi2_pins {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x37C0, (INPUT_EN | MUX_MODE0))          /* SPI2_SCLK.spi2_sclk (A26) */
+			DRA7XX_CORE_IOPAD(0x37C4, (INPUT_EN | MUX_MODE0))          /* SPI2_D1.spi2_d1 (B11) */
+			DRA7XX_CORE_IOPAD(0x37C8, (INPUT_EN | MUX_MODE0))          /* SPI2_D0.spi2_d0 (B13) */
+			DRA7XX_CORE_IOPAD(0x37CC, (PIN_OUTPUT_PULLUP | MUX_MODE0)) /* SPI2_CS0.spi2_cs0 (A12) */
+		>;
+	};
+
+	dcan1__pins_default: dcan1_pins_default {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x37d0, (PIN_INPUT_PULLUP | MUX_MODE0))   /* dcan1_tx.tx */
+			DRA7XX_CORE_IOPAD(0x37d4, (PIN_INPUT_PULLUP | MUX_MODE0))   /* dcan1_rx.rx */
+		>;
+	};
+
+	mcasp2_pins_default: mcasp2_pins_default {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x3698, (PIN_INPUT_PULLDOWN | MUX_MODE3))   /* xref_clk1.mcasp2_ahclkx */
+			DRA7XX_CORE_IOPAD(0x36F4, (PIN_INPUT_PULLDOWN | MUX_MODE0))   /* mcasp2_aclkx.mcasp2_aclkx */
+			DRA7XX_CORE_IOPAD(0x36F8, (PIN_INPUT_PULLUP | MUX_MODE0))   /* mcasp2_fsx.mcasp2_fsx */
+			DRA7XX_CORE_IOPAD(0x370C, (PIN_INPUT_PULLUP | MUX_MODE0))   /* mcasp2_axr2.mcasp2_axr2 */
+			DRA7XX_CORE_IOPAD(0x3710, (PIN_INPUT_PULLUP | MUX_MODE0))   /* mcasp2_axr3.mcasp2_axr3 */
+		>;
+	};
+
+	gpio1_pins_default: gpio1_pins_default {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x381c, (PIN_INPUT_PULLUP | MUX_MODE14)) /* Wakeup1.gpio1_1 */
+			DRA7XX_CORE_IOPAD(0x3820, (PIN_INPUT_PULLUP | MUX_MODE14)) /* Wakeup2.gpio1_2 */
+		>;
+	};
+
+	gpio4_pins_default: gpio4_pins_default {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x3568, (PIN_INPUT_PULLUP | MUX_MODE14)) /* vin2a_d0.gpio4_1 */
+		>;
+	};
+
+	gpmc_pins_default: gpmc_pins_default {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x3400, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad0.gpmc_d0 */
+			DRA7XX_CORE_IOPAD(0x3404, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad1.gpmc_d1 */
+			DRA7XX_CORE_IOPAD(0x3408, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad2.gpmc_d2 */
+			DRA7XX_CORE_IOPAD(0x340C, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad3.gpmc_d3 */
+			DRA7XX_CORE_IOPAD(0x3410, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad4.gpmc_d4 */
+			DRA7XX_CORE_IOPAD(0x3414, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad5.gpmc_d5 */
+			DRA7XX_CORE_IOPAD(0x3418, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad6.gpmc_d6 */
+			DRA7XX_CORE_IOPAD(0x341C, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad7.gpmc_d7 */
+			DRA7XX_CORE_IOPAD(0x3420, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad8.gpmc_d8 */
+			DRA7XX_CORE_IOPAD(0x3424, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad9.gpmc_d9 */
+			DRA7XX_CORE_IOPAD(0x3428, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad10.gpmc_d10 */
+			DRA7XX_CORE_IOPAD(0x342C, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad11.gpmc_d11 */
+			DRA7XX_CORE_IOPAD(0x3430, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad12.gpmc_d12 */
+			DRA7XX_CORE_IOPAD(0x3434, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad13.gpmc_d13 */
+			DRA7XX_CORE_IOPAD(0x3438, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad14.gpmc_d14 */
+			DRA7XX_CORE_IOPAD(0x343C, (PIN_INPUT_PULLUP | MUX_MODE0))  /* gpmc_ad15.gpmc_d15 */
+			DRA7XX_CORE_IOPAD(0x34C0, (PIN_INPUT | MUX_MODE0))         /* gpmc_clk.gpmc_clk */
+			DRA7XX_CORE_IOPAD(0x34C4, (PIN_OUTPUT_PULLUP | MUX_MODE0)) /* gpmc_advn_ale.gpmc_advn_ale */
+			DRA7XX_CORE_IOPAD(0x34C8, (PIN_OUTPUT_PULLUP | MUX_MODE0)) /* gpmc_oen_ren.gpmc_oen_ren */
+			DRA7XX_CORE_IOPAD(0x34CC, (PIN_OUTPUT_PULLUP | MUX_MODE0)) /* gpmc_wen.gpmc_wen */
+			DRA7XX_CORE_IOPAD(0x34B4, (PIN_OUTPUT_PULLUP | MUX_MODE0)) /* gpmc_cs0.gpmc_cs0 */
+		>;
+	};
+};
+
+&gpmc {
+	depth = <1>;    /* only create devices on depth 1 */
+	status = "okay";
+
+	#address-cells = <2>;
+	#size-cells = <1>;
+
+
+	ranges = <0 0 0x01000000 0x01000000>;  /* CSn0 0, addr 0x01000000, size 0x1000000 */
+
+	gpmc_device0@0,0 {
+		compatible = "cfi-flash";
+		linux,mtd-name= "intel,pf48f6000m0y1be";
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		status = "okay";
+
+		reg = <0 0 0x01000000>;
+
+		/* CONFIG 1 */
+		bank-width = <2>;               /* GPMC_CONFIG1_DEVICESIZE(1) 2: 16bits */
+		gpmc,mux-add-data = <2>;        /* GPMC_CONFIG1_MUXTYPE(0) 2: address-data multiplexing mode */
+
+		/* CONFIG 2 */
+		gpmc,cs-on-ns = <0>;
+		gpmc,cs-rd-off-ns = <93>;
+		gpmc,cs-wr-off-ns = <93>;
+
+		/* CONFIG 3 */
+		gpmc,adv-on-ns = <6>;
+		gpmc,adv-rd-off-ns = <24>;
+		gpmc,adv-wr-off-ns = <24>;
+
+		/* CONFIG 4 */
+		gpmc,oe-on-ns = <27>;
+		gpmc,oe-off-ns = <84>;
+		gpmc,we-on-ns = <27>;
+		gpmc,we-off-ns = <84>;
+
+		/* CONFIG 5 */
+		gpmc,rd-cycle-ns = <93>;
+		gpmc,wr-cycle-ns = <93>;
+		gpmc,access-ns = <57>;
+		gpmc,page-burst-access-ns = <3>;
+		gpmc,bus-turnaround-ns = <6>;
+		gpmc,cycle2cycle-delay-ns = <9>;
+
+		/* CONFIG 6 */
+		gpmc,wr-data-mux-bus-ns = <45>;
+		gpmc,wr-access-ns = <93>;
+		gpmc,cycle2cycle-samecsen;
+		gpmc,cycle2cycle-diffcsen;
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	clock-frequency = <400000>;
+
+
+	tps659038: tps659038@58 {
+		compatible = "ti,tps659038";
+		reg = <0x58>;
+		interrupt-parent = <&gpio1>;
+		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
+
+		#interrupt-cells = <2>;
+		interrupt-controller;
+
+		ti,system-power-controller;
+		ti,palmas-override-powerhold;
+
+		tps659038_pmic {
+			compatible = "ti,tps659038-pmic";
+
+			regulators {
+				smps12_reg: smps12 {
+					/* VDD_MPU */
+					regulator-name = "smps12";
+					regulator-min-microvolt = < 850000>;
+					regulator-max-microvolt = <1250000>;
+					regulator-always-on;
+					regulator-boot-on;
+				};
+
+				smps3_reg: smps3 {
+					/* VDD_DDR */
+					regulator-name = "smps3";
+					regulator-min-microvolt = <1350000>;
+					regulator-max-microvolt = <1350000>;
+					regulator-always-on;
+					regulator-boot-on;
+				};
+
+				smps45_reg: smps45 {
+					/* VDD_DSPEVE */
+					regulator-name = "smps45";
+					regulator-min-microvolt = < 850000>;
+					regulator-max-microvolt = <1060000>;
+					regulator-always-on;
+					regulator-boot-on;
+				};
+
+				smps6_reg: smps6 {
+					/* VDD_GPU */
+					regulator-name = "smps6";
+					regulator-min-microvolt = <850000>;
+					regulator-max-microvolt = <1060000>;
+					regulator-always-on;
+					regulator-boot-on;
+				};
+
+				smps7_reg: smps7 {
+					/* VDD_CORE */
+					regulator-name = "smps7";
+					regulator-min-microvolt = <850000>;
+					regulator-max-microvolt = <1150000>;
+					regulator-always-on;
+					regulator-boot-on;
+				};
+
+				smps8_reg: smps8 {
+					/* VDD_1V06 */
+					regulator-name = "smps8";
+					regulator-min-microvolt = <1060000>;
+					regulator-max-microvolt = <1060000>;
+					regulator-always-on;
+					regulator-boot-on;
+				};
+
+				/* SMPS9 unused */
+
+				ldo1_reg: ldo1 {
+					/* VDD_SD / VDDSHV8  */
+					regulator-name = "ldo1";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <3300000>;
+					regulator-boot-on;
+					regulator-always-on;
+				};
+
+				ldo2_reg: ldo2 {
+					/* VDD_SHV5 */
+					regulator-name = "ldo2";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
+					regulator-always-on;
+					regulator-boot-on;
+				};
+
+				ldo3_reg: ldo3 {
+					/* VDDA_1V8_PHYA */
+					regulator-name = "ldo3";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
+					regulator-always-on;
+					regulator-boot-on;
+				};
+
+				ldo4_reg: ldo4 {
+					/* VDDA_1V8_PHYB */
+					regulator-name = "ldo4";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
+					regulator-always-on;
+					regulator-boot-on;
+				};
+
+				ldo9_reg: ldo9 {
+					/* VDD_RTC */
+					regulator-name = "ldo9";
+					regulator-min-microvolt = <1050000>;
+					regulator-max-microvolt = <1050000>;
+					regulator-always-on;
+					regulator-boot-on;
+				};
+
+				ldoln_reg: ldoln {
+					/* VDDA_1V8_PLL */
+					regulator-name = "ldoln";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
+					regulator-always-on;
+					regulator-boot-on;
+				};
+
+				ldousb_reg: ldousb {
+					/* VDDA_3V_USB: VDDA_USBHS33 */
+					regulator-name = "ldousb";
+					regulator-min-microvolt = <3300000>;
+					regulator-max-microvolt = <3300000>;
+					regulator-boot-on;
+				};
+
+				regen1: regen1 {
+					/* VDD_3V3_ON */
+					regulator-name = "regen1";
+					regulator-boot-on;
+					regulator-always-on;
+				};
+			};
+		};
+
+		tps659038_rtc: tps659038_rtc {
+			compatible = "ti,palmas-rtc";
+			interrupt-parent = <&tps659038>;
+			interrupts = <8 IRQ_TYPE_EDGE_FALLING>;
+			wakeup-source;
+		};
+
+		tps659038_pwr_button: tps659038_pwr_button {
+			compatible = "ti,palmas-pwrbutton";
+			interrupt-parent = <&tps659038>;
+			interrupts = <1 IRQ_TYPE_EDGE_FALLING>;
+			wakeup-source;
+			ti,palmas-long-press-seconds = <12>;
+		};
+
+		tps659038_gpio: tps659038_gpio {
+			compatible = "ti,palmas-gpio";
+			gpio-controller;
+			#gpio-cells = <2>;
+		};
+
+		extcon_usb2: tps659038_usb {
+			compatible = "ti,palmas-usb-vid";
+			ti,enable-vbus-detection;
+			vbus-gpio = <&gpio3 6 GPIO_ACTIVE_HIGH>;
+		};
+
+	};
+
+	tlv320aic3104: tlv320aic3104@18 {
+		#sound-dai-cells = <0>;
+		compatible = "ti,tlv320aic3104";
+		reg = <0x18>;
+
+		assigned-clocks = <&clkoutmux2_clk_mux>;
+		assigned-clock-parents = <&sys_clk2_dclk_div>;
+
+		adc-settle-ms = <40>;
+		AVDD-supply = <&vdd_3v3>;
+		IOVDD-supply = <&vdd_3v3>;
+		DRVDD-supply = <&vdd_3v3>;
+		DVDD-supply = <&aic_dvdd>;
+
+		status = "okay";
+	};
+};
+
+&i2c3 {
+	status = "okay";
+	clock-frequency = <400000>;
+
+};
+
+&i2c4 {
+	status = "okay";
+	clock-frequency = <400000>;
+
+
+	tmp102: tmp102@49 {
+		compatible = "ti,tmp102";
+		reg = <0x49>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <13 IRQ_TYPE_LEVEL_LOW>;
+		#thermal-sensor-cells = <1>;
+	};
+
+	mcp_rtc: rtc@6f {
+		compatible = "microchip,mcp7941x";
+		reg = <0x6f>;
+		interrupts-extended = <&crossbar_mpu GIC_SPI 2 IRQ_TYPE_EDGE_RISING>,
+				      <&dra7_pmx_core 0x424>;
+		interrupt-names = "irq", "wakeup";
+
+		vcc-supply = <&vdd_3v3>;
+		wakeup-source;
+	};
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&gpio4 {
+	status = "okay";
+};
+
+&gpio7 {
+	ti,no-reset-on-init;
+	ti,no-idle-on-init;
+};
+
+&uart1 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart1_pins_default>;
+
+	interrupts-extended = <&crossbar_mpu GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>,
+			      <&dra7_pmx_core 0x3e0>;
+};
+
+&uart3 {
+	status = "okay";
+	interrupts-extended = <&crossbar_mpu GIC_SPI 69 IRQ_TYPE_LEVEL_HIGH>,
+			      <&dra7_pmx_core 0x3f8>;
+};
+
+&uart10 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart10_pins_default>;
+};
+
+&mac {
+	status = "okay";
+	dual_emac;
+};
+
+&cpsw_emac0 {
+	phy_id = <&davinci_mdio>, <0>;
+	phy-mode = "rgmii";
+	dual_emac_res_vlan = <1>;
+};
+
+&cpsw_emac1 {
+	phy_id = <&davinci_mdio>, <1>;
+	phy-mode = "rgmii";
+	dual_emac_res_vlan = <2>;
+};
+
+/*&mcspi3 {
+        status = "okay";
+        pinctrl-names = "default";
+        pinctrl-0 = <&spi3_pins>;
+        ti,pindir-d0-out-d1-in;
+
+	ads7846@0 {
+		pinctrl-names = "default";
+		pinctrl-0 = <&ads7846_pins>;
+
+		compatible = "ti,ads7846";
+
+		reg = <0>;			//  CS0 
+		spi-max-frequency = <1500000>;
+
+		interrupt-parent = <&gpio3>;
+		interrupts = <25 0>;		// gpio3_25 
+		pendown-gpio = <&gpio3 25 0>;
+
+		ti,x-min = /bits/ 16 <0x0>;
+		ti,x-max = /bits/ 16 <0x0fff>;
+		ti,y-min = /bits/ 16 <0x0>;
+		ti,y-max = /bits/ 16 <0x0fff>;
+
+		ti,x-plate-ohms = /bits/ 16 <180>;
+		ti,pressure-max = /bits/ 16 <255>;
+
+		ti,debounce-max = /bits/ 16 <10>;
+		ti,debounce-tol = /bits/ 16 <30>;
+		ti,debounce-rep = /bits/ 16 <1>;
+
+		ti,settle-delay-usec = /bits/ 16 <150>;
+		ti,keep-vref-on = <1>;
+
+		linux,wakeup;
+	};
+};*/
+/*&mcspi3 {
+        status = "okay";
+        pinctrl-names = "default";
+        pinctrl-0 = <&spi3_pins>;
+        ti,pindir-d0-out-d1-in;
+
+	spidev0:spi@0 {
+		compatible = "spidev";
+		reg = <0>;			// CS0 
+		spi-max-frequency = <1500000>;
+	};
+};
+*/
+/*&mcspi2 {
+        status = "okay";
+        pinctrl-names = "default";
+        pinctrl-0 = <&spi2_pins>;
+        ti,pindir-d0-out-d1-in;
+
+	spidev:spi@0 {
+		compatible = "spidev";
+		reg = <0>;			//  CS0 
+		spi-max-frequency = <1500000>;
+	};
+};*/
+
+
+&mcspi2 {
+        status = "okay";
+        pinctrl-names = "default";
+	spidev:spi@0 {
+		compatible = "spidev";
+		reg = <0>;			//  CS0 
+		spi-max-frequency = <48000000>;
+                status = "okay";
+                spi-cpol; spi-cpha;
+	};
+};
+
+
+&dcan1 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&dcan1__pins_default>;
+};
+
+&qspi {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&qspi1_pins_default>;
+
+	spi-max-frequency = <64000000>;
+	m25p80@0 {
+		compatible = "s25fl256s1";
+		spi-max-frequency = <64000000>;
+		reg = <0>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <4>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		/*
+		 * MTD partition table.
+		 */
+		partition@0 {
+			label = "QSPI.SPL";
+			reg = <0x00000000 0x000020000>;
+		};
+		partition@1 {
+			label = "QSPI.SPL.backup1";
+			reg = <0x00020000 0x00020000>;
+		};
+		partition@2 {
+			label = "QSPI.u-boot";
+			reg = <0x00040000 0x00100000>;
+		};
+		partition@3 {
+			label = "QSPI.u-boot-spl-os";
+			reg = <0x00140000 0x00080000>;
+		};
+		partition@4 {
+			label = "QSPI.u-boot-env";
+			reg = <0x001C0000 0x00010000>;
+		};
+		partition@5 {
+			label = "QSPI.u-boot-env.backup1";
+			reg = <0x001D0000 0x00010000>;
+		};
+		partition@6 {
+			label = "QSPI.kernel";
+			reg = <0x001E0000 0x0800000>;
+		};
+		partition@7 {
+			label = "QSPI.user-data";
+			reg = <0x009E0000 0x1620000>;
+		};
+	};
+};
+
+&mmc1 {
+	status = "okay";
+
+	vmmc-supply = <&ldo1_reg>;
+	bus-width = <4>;
+	cd-gpios = <&gpio6 27 GPIO_ACTIVE_LOW>; /* gpio 219 */
+};
+
+&mmc2 {
+	status = "okay";
+
+	vmmc-supply = <&vdd_3v3>;
+	bus-width = <8>;
+	ti,non-removable;
+	cap-mmc-dual-data-rate;
+};
+
+&sata {
+	status = "okay";
+};
+
+&usb2_phy1 {
+	phy-supply = <&ldousb_reg>;
+};
+
+&usb2_phy2 {
+	phy-supply = <&ldousb_reg>;
+};
+
+&usb1 {
+	dr_mode = "host";
+};
+
+&omap_dwc3_2 {
+	extcon = <&extcon_usb2>;
+};
+
+&usb2 {
+	/*
+	 * Stand alone usage is peripheral only.
+	 * However, with some resistor modifications
+	 * this port can be used via expansion connectors
+	 * as "host" or "dual-role". If so, provide
+	 * the necessary dr_mode override in the expansion
+	 * board's DT.
+	 */
+	dr_mode = "host";
+};
+
+&cpu_trips {
+	cpu_alert1: cpu_alert1 {
+		temperature = <50000>; /* millicelsius */
+		hysteresis = <2000>; /* millicelsius */
+		type = "active";
+	};
+};
+
+&cpu_cooling_maps {
+	map1 {
+		trip = <&cpu_alert1>;
+		cooling-device = <&pwm_fan THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
+	};
+};
+
+&oppdm_mpu {
+	vdd-supply = <&smps12_reg>;
+};
+
+&oppdm_dspeve {
+	vdd-supply = <&smps45_reg>;
+};
+
+&oppdm_gpu {
+	vdd-supply = <&smps45_reg>;
+};
+
+&oppdm_ivahd {
+	vdd-supply = <&smps45_reg>;
+};
+
+&oppdm_core {
+	vdd-supply = <&smps6_reg>;
+};
+
+&dss {
+	status = "ok";
+
+	vdda_video-supply = <&ldoln_reg>;
+};
+
+&bb2d {
+	status = "okay";
+};
+
+&hdmi {
+	status = "ok";
+	vdda-supply = <&ldo4_reg>;
+
+	port {
+		hdmi_out: endpoint {
+			remote-endpoint = <&tpd12s015_in>;
+		};
+	};
+};
+
+&mcasp2 {
+	#sound-dai-cells = <0>;
+	assigned-clocks = <&mcasp2_ahclkx_mux>;
+	assigned-clock-parents = <&sys_clkin2>;
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&mcasp2_pins_default>;
+
+	op-mode = <0>;	/* MCASP_IIS_MODE */
+	tdm-slots = <4>;
+	/* 4 serializers */
+	serial-dir = <	/* 0: INACTIVE, 1: TX, 2: RX */
+		0 0 2 2
+	>;
+	tx-num-evt = <32>;
+	rx-num-evt = <32>;
+};
+
+&mcasp3 {
+	#sound-dai-cells = <0>;
+	assigned-clocks = <&mcasp3_ahclkx_mux>;
+	assigned-clock-parents = <&sys_clkin2>;
+	status = "okay";
+
+	op-mode = <0>;	/* MCASP_IIS_MODE */
+	tdm-slots = <2>;
+	/* 4 serializers */
+	serial-dir = <	/* 0: INACTIVE, 1: TX, 2: RX */
+		1 2 0 0
+	>;
+	tx-num-evt = <32>;
+	rx-num-evt = <32>;
+};
+
+&timer16 {
+	ti,timer-pwm;
+};
+
+&mailbox3 {
+	status = "okay";
+	mbox_pru1_0: mbox_pru1_0 {
+		status = "okay";
+	};
+	mbox_pru1_1: mbox_pru1_1 {
+		status = "okay";
+	};
+};
+
+&mailbox4 {
+	status = "okay";
+	mbox_pru2_0: mbox_pru2_0 {
+		status = "okay";
+	};
+	mbox_pru2_1: mbox_pru2_1 {
+		status = "okay";
+	};
+};
+
+&mailbox5 {
+	status = "okay";
+	mbox_ipu1_ipc3x: mbox_ipu1_ipc3x {
+		status = "okay";
+	};
+	mbox_dsp1_ipc3x: mbox_dsp1_ipc3x {
+		status = "okay";
+	};
+};
+
+&mailbox6 {
+	status = "okay";
+	mbox_ipu2_ipc3x: mbox_ipu2_ipc3x {
+		status = "okay";
+	};
+	mbox_dsp2_ipc3x: mbox_dsp2_ipc3x {
+		status = "okay";
+	};
+};
+
+&mmu0_dsp1 {
+	status = "okay";
+};
+
+&mmu1_dsp1 {
+	status = "okay";
+};
+
+&mmu0_dsp2 {
+	status = "okay";
+};
+
+&mmu1_dsp2 {
+	status = "okay";
+};
+
+&mmu_ipu1 {
+	status = "okay";
+};
+
+&mmu_ipu2 {
+	status = "okay";
+};
+
+&ipu2 {
+	status = "okay";
+	memory-region = <&ipu2_cma_pool>;
+	mboxes = <&mailbox6 &mbox_ipu2_ipc3x>;
+	timers = <&timer3>;
+	watchdog-timers = <&timer4>, <&timer9>;
+};
+
+&ipu1 {
+	status = "okay";
+	memory-region = <&ipu1_cma_pool>;
+	mboxes = <&mailbox5 &mbox_ipu1_ipc3x>;
+	timers = <&timer11>;
+};
+
+&dsp1 {
+	status = "okay";
+	memory-region = <&dsp1_cma_pool>;
+	mboxes = <&mailbox5 &mbox_dsp1_ipc3x>;
+	timers = <&timer5>;
+};
+
+&dsp2 {
+	status = "okay";
+	memory-region = <&dsp2_cma_pool>;
+	mboxes = <&mailbox6 &mbox_dsp2_ipc3x>;
+	timers = <&timer6>;
+};
+
+&pruss1 {
+	status = "okay";
+	pru1_0: pru0@4b234000 {
+		interrupt-parent = <&pruss1_intc>;
+		interrupts = <16>, <17>;
+		interrupt-names = "vring", "kick";
+		status = "okay";
+	};
+
+	pru1_1: pru1@4b238000 {
+		interrupt-parent = <&pruss1_intc>;
+		interrupts = <18>, <19>;
+		interrupt-names = "vring", "kick";
+		status = "okay";
+	};
+};
+
+&pruss2 {
+	status = "okay";
+	pru2_0: pru0@4b2b4000 {
+		interrupt-parent = <&pruss2_intc>;
+		interrupts = <16>, <17>;
+		interrupt-names = "vring", "kick";
+		status = "okay";
+	};
+
+	pru2_1: pru1@4b2b8000 {
+		interrupt-parent = <&pruss2_intc>;
+		interrupts = <18>, <19>;
+		interrupt-names = "vring", "kick";
+		status = "okay";
+	};
+};
+

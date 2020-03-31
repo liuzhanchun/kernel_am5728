@@ -1,0 +1,16 @@
+Analog Devices AD5724/AD5734/AD5754 DAC device driver
+
+Required properties:
+	- compatible: Must be one of "adi,ad5724r", "adi,ad5734r", "adi,ad5754r"
+	- reg: SPI chip select number for the device
+	- spi-max-frequency: Max SPI frequency to use (< 30000000)
+	- spi-cpha: Must have this one
+
+Example:
+
+		ad5724@0 {
+			compatible = "adi,ad5724r";
+			reg = <1>; /* CS1 */
+			spi-cpha; /* SPI_MODE_1 */
+			spi-max-frequency = <15000000>;
+		};

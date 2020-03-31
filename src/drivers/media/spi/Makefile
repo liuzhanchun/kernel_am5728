@@ -1,0 +1,2 @@
+obj-$(CONFIG_VIDEO_GV7601) += gv7601.o
+

@@ -1,0 +1,126 @@
+/*
+ * Copyright (C) 2015-2016 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include "am572x-idk.dts"
+
+/ {
+	aliases {
+		ethernet2 = &pruss1_emac0;
+		ethernet3 = &pruss1_emac1;
+		ethernet4 = &pruss2_emac0;
+		ethernet5 = &pruss2_emac1;
+	};
+
+	/* Dual mac ethernet application node on icss1 */
+	pruss1_eth: pruss1_eth {
+		status = "okay";
+		compatible = "ti,am57-prueth";
+		pruss = <&pruss1>;
+		sram = <&ocmcram1>;
+		interrupt-parent = <&pruss1_intc>;
+
+		pruss1_emac0: ethernet-mii0 {
+			phy-handle = <&pruss1_eth0_phy>;
+			phy-mode = "mii";
+			interrupts = <20>, <22>;
+			interrupt-names = "rx", "tx";
+			/* Filled in by bootloader */
+			local-mac-address = [00 00 00 00 00 00];
+		};
+
+		pruss1_emac1: ethernet-mii1 {
+			phy-handle = <&pruss1_eth1_phy>;
+			phy-mode = "mii";
+			interrupts = <21>, <23>;
+			interrupt-names = "rx", "tx";
+			/* Filled in by bootloader */
+			local-mac-address = [00 00 00 00 00 00];
+		};
+	};
+};
+
+&dra7_pmx_core {
+	pru1_mii_pins_default: pru1_mii_pins_default {
+		pinctrl-single,pins = <
+			DRA7XX_CORE_IOPAD(0x3668, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* rgmii0_rxc.pr1_mii_mt_clk (U5)*/
+			DRA7XX_CORE_IOPAD(0x3674, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* rgmii0_rxd2.pr1_mii0_txen (V3) */
+			DRA7XX_CORE_IOPAD(0x367c, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* rgmii0_rxd0.pr1_mii0_txd0 (W2) */
+			DRA7XX_CORE_IOPAD(0x3678, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* rgmii0_rxd1.pr1_mii0_txd1 (Y2) */
+			DRA7XX_CORE_IOPAD(0x3670, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* rgmii0_rxd3.pr1_mii0_txd2 (V4) */
+			DRA7XX_CORE_IOPAD(0x366c, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* rgmii0_rxctl.pr1_mii0_txd3 (V5) */
+			DRA7XX_CORE_IOPAD(0x364c, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* uart3_txd.pr1_mii_mr0_clk (Y1) */
+			DRA7XX_CORE_IOPAD(0x3648, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* uart3_rxd.pr1_mii0_rxdv (V2) */
+			DRA7XX_CORE_IOPAD(0x365c, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* rgmii0_txd2.pr1_mii0_rxer (U7) */
+			DRA7XX_CORE_IOPAD(0x3658, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* rgmii0_txd3.pr1_mii0_crs (V7) */
+			DRA7XX_CORE_IOPAD(0x363c, (PIN_INPUT_PULLUP | MUX_MODE11)) /* mdio_mclk.pr1_mii0_col (V1) */
+			DRA7XX_CORE_IOPAD(0x3640, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* mdio_d.pr1_mii0_rxlink (U4) */
+			DRA7XX_CORE_IOPAD(0x3664, (PIN_INPUT_PULLUP | MUX_MODE11)) /* rgmii0_txd0.pr1_mii0_rxd0 (U6) */
+			DRA7XX_CORE_IOPAD(0x3660, (PIN_INPUT_PULLUP | MUX_MODE11)) /* rgmii0_txd1.pr1_mii0_rxd1 (V6) */
+			DRA7XX_CORE_IOPAD(0x3654, (PIN_INPUT_PULLUP | MUX_MODE11)) /* rgmii0_txctl.pr1_mii0_rxd2 (V9) */
+			DRA7XX_CORE_IOPAD(0x3650, (PIN_INPUT_PULLUP | MUX_MODE11)) /* rgmii0_txc.pr1_mii0_rxd3 (W9) */
+
+			DRA7XX_CORE_IOPAD(0x3580, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* vin2a_d6.pr1_mii_mt1_clk (C1) */
+			DRA7XX_CORE_IOPAD(0x3584, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* vin2a_d7.pr1_mii1_txen (E4) */
+			DRA7XX_CORE_IOPAD(0x3588, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* vin2a_d8.pr1_mii1_txd3 (F5) */
+			DRA7XX_CORE_IOPAD(0x358c, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* vin2a_d9.pr1_mii1_txd2 (E6) */
+			DRA7XX_CORE_IOPAD(0x3590, (PIN_INPUT_PULLUP | MUX_MODE11)) /* vin2a_d10.pr1_mdio_mdclk (D3) */
+			DRA7XX_CORE_IOPAD(0x3594, (PIN_INPUT_PULLUP | MUX_MODE11)) /* vin2a_d11,pr1_mdio_data (F6) */
+			DRA7XX_CORE_IOPAD(0x3598, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* vin2a_d12.pr1_mii1_txd1 (D5) */
+			DRA7XX_CORE_IOPAD(0x359c, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* vin2a_d13.pr1_mii1_txd0 (C2) */
+			DRA7XX_CORE_IOPAD(0x35a0, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* vin2a_d14.pr1_mii_mr1_clk (C3) */
+			DRA7XX_CORE_IOPAD(0x35a4, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* vin2a_d15.pr1_mii1_rxdv (C4) */
+			DRA7XX_CORE_IOPAD(0x35a8, (PIN_INPUT_PULLUP | MUX_MODE11)) /* vin2a_d16.pr1_mii1_rxd3 (B2) */
+			DRA7XX_CORE_IOPAD(0x35ac, (PIN_INPUT_PULLUP | MUX_MODE11)) /* vin2a_d17.pr1_mii1_rxd2 (D6) */
+			DRA7XX_CORE_IOPAD(0x35b0, (PIN_INPUT_PULLUP | MUX_MODE11)) /* vin2a_d18.pr1_mii1_rxd1 (C5) */
+			DRA7XX_CORE_IOPAD(0x35b4, (PIN_INPUT_PULLUP | MUX_MODE11)) /* vin2a_d19.pr1_mii1_rxd0 (A3) */
+			DRA7XX_CORE_IOPAD(0x35b8, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* vin2a_d20.pr1_mii1_rxer (B3) */
+			DRA7XX_CORE_IOPAD(0x35bc, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* vin2a_d21.pr1_mii1_rxlink (B4) */
+			DRA7XX_CORE_IOPAD(0x35c0, (PIN_INPUT_PULLUP | MUX_MODE11)) /* vin2a_d22.pr1_mii1_col (B5) */
+			DRA7XX_CORE_IOPAD(0x35c4, (PIN_INPUT_PULLDOWN | MUX_MODE11)) /* vin2a_d23.pr1_mii1_crs (A4) */
+		>;
+	};
+};
+
+/* gpio3_18 use to select the rgmii or pruss1 mii */
+&gpio3 {
+	status = "okay";
+
+	p18 {
+		gpio-hog;
+		gpios = <18 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "SelRGMIIorPRU1MII";
+	};
+};
+
+&mac {
+	status = "disable";
+};
+
+&pruss1_mdio {
+	status = "okay";
+
+	reset-gpios = <&gpio7 10 GPIO_ACTIVE_LOW>,
+			<&gpio2 30 GPIO_ACTIVE_LOW>;
+	reset-delay-us = <2>;   /* PHY datasheet states 1uS min */
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pru1_mii_pins_default>;
+
+	pruss1_eth0_phy: ethernet-phy@0 {
+		reg = <0>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <10 IRQ_TYPE_EDGE_FALLING>;
+	};
+
+	pruss1_eth1_phy: ethernet-phy@1 {
+		reg = <1>;
+		interrupt-parent = <&gpio4>;
+		interrupts = <5 IRQ_TYPE_EDGE_FALLING>;
+	};
+};
